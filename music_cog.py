@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from youtube_dl import YoutubeDL
 from discord.utils import get
+import asyncio
 bot = commands.Bot(command_prefix = '==')
 
 class music_cog(commands.Cog):
@@ -13,8 +14,8 @@ class music_cog(commands.Cog):
         self.vc = None
         self.current_channel = None
 
-        self.YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist': 'True'}
-        self.FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 - reconnect_delay_max 5', 'options': '-vn'}
+        self.YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist': True, 'youtube_include_dash_manifest': False}
+        self.FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn -ar 48000'}
     
     def search_yt(self, item):
         with YoutubeDL(self.YDL_OPTIONS) as ydl:
@@ -31,17 +32,21 @@ class music_cog(commands.Cog):
         if len(self.queue) > 0:
             current_url = self.queue[0]['url']
             current_title = self.queue[0]['title']
+            print(current_url)
             self.queue.pop(0)
-            self.vc.play(discord.FFmpegPCMAudio(current_url, **self.FFMPEG_OPTIONS), after = lambda e: self.next())
+            self.vc.play(discord.FFmpegPCMAudio(current_url, **self.FFMPEG_OPTIONS), after = lambda e: await self.start_play(ctx))
+            self.vc.pause()
+            await asyncio.sleep(5)
+            self.vc.resume()
             print('start playing')
             await ctx.send(f'{current_title}')
 
-    def next(self):
-        if len(self.queue) > 0:
-            current_url = self.queue[0]['url']
-            current_title = self.queue[0]['title']
-            self.queue.pop(0)
-            self.vc.play(discord.FFmpegPCMAudio(current_url, **self.FFMPEG_OPTIONS), after = lambda e: self.next())
+    # def next(self):
+    #     if len(self.queue) > 0:
+    #         current_url = self.queue[0]['url']
+    #         current_title = self.queue[0]['title']
+    #         self.queue.pop(0)
+    #         self.vc.play(discord.FFmpegPCMAudio(current_url, **self.FFMPEG_OPTIONS), after = lambda e: self.next())
 
 
 
